@@ -1,32 +1,32 @@
 package com.udacity.gradle.builditbigger.free;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ProgressBar;
 
+import com.b3sk.jokelibrary.JokeActivity;
+import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.InterstitialAd;
+import com.udacity.gradle.builditbigger.EndpointsAsyncTask;
 import com.udacity.gradle.builditbigger.R;
-
-
-import android.support.v4.app.Fragment;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
 
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements View.OnClickListener {
 
+    Intent intent;
+    InterstitialAd interstitialAd;
+    ProgressBar spinner;
     public MainActivityFragment() {
     }
 
@@ -43,7 +43,59 @@ public class MainActivityFragment extends Fragment {
                 .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
                 .build();
         mAdView.loadAd(adRequest);
+
+
+        interstitialAd = new InterstitialAd(getContext());
+        interstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+
+        //On add closed launch the new joke activity
+        interstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdClosed() {
+                requestNewInterstitial();
+                if (intent != null) {
+                    startActivity(intent);
+                }
+
+            }
+        });
+        requestNewInterstitial();
+
+        Button jokeButton = (Button) root.findViewById(R.id.joke_button);
+        jokeButton.setOnClickListener(this);
+
+        spinner = (ProgressBar) root.findViewById(R.id.joke_progress_bar);
+
         return root;
+    }
+
+    private void requestNewInterstitial() {
+
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                .build();
+        interstitialAd.loadAd(adRequest);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.joke_button:
+                spinner.setVisibility(v.VISIBLE);
+                new EndpointsAsyncTask(new EndpointsAsyncTask.AsyncResponse() {
+                    @Override
+                    public void processFinish(String output) {
+                        intent = new Intent(getContext(), JokeActivity.class);
+                        intent.putExtra(JokeActivity.JOKE_KEY, output);
+                        spinner.setVisibility(getView().GONE);
+                        if (interstitialAd.isLoaded()) {
+                            interstitialAd.show();
+                        } else startActivity(intent);
+
+
+                    }
+                }).execute();
+        }
     }
 }
 
