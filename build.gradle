@@ -18,3 +18,24 @@ allprojects {
         jcenter()
     }
 }
+
+task runTest  {
+    dependsOn ':app:connectedAndroidTest'
+    mustRunAfter ':backend:appengineRun'
+}
+
+task stopBackend  {
+    dependsOn ':backend:appengineStop'
+    mustRunAfter runTest
+}
+
+task masterKey {
+    evaluationDependsOn ":backend"
+    project(":backend") {
+        appengine {
+            daemon true
+        }
+    }
+    dependsOn runTest
+    dependsOn stopBackend
+}
